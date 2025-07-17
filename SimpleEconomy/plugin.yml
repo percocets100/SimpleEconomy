@@ -1,0 +1,61 @@
+name: Economy
+version: 1.0.0
+main: SimpleEconomy\src
+api: 4.0.0
+author: percocets1000
+description: A comprehensive economy plugin
+website: https://github.com/percocets100
+
+commands:
+  balance:
+    description: Check your balance or another player's balance
+    usage: /balance [player]
+    aliases: [bal, money]
+    permission: economy.balance
+
+  money:
+    description: Manage player money (admin only)
+    usage: /money <give|take|set> <player> <amount>
+    permission: economy.admin
+
+  pay:
+    description: Pay money to another player
+    usage: /pay <player> <amount>
+    permission: economy.pay
+
+  economy:
+    description: Economy administration commands
+    usage: /economy <reload|save|stats>
+    aliases: [eco]
+    permission: economy.admin
+
+  top:
+    description: Show top players by balance
+    usage: /top
+    permission: economy.top
+
+permissions:
+  economy.balance:
+    description: Allow checking balance
+    default: true
+    
+  economy.pay:
+    description: Allow paying other players
+    default: true
+    
+  economy.top:
+    description: Allow viewing top players
+    default: true
+    
+  economy.admin:
+    description: Allow economy administration
+    default: op
+    
+  economy.*:
+    description: All economy permissions
+    default: op
+    children:
+      economy.balance: true
+      economy.pay: true
+      economy.top: true
+      economy.admin: true
