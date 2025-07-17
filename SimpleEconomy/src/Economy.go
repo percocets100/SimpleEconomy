@@ -13,7 +13,6 @@ import (
 	"time"
 )
 
-// EconomyPlugin represents the main plugin structure
 type EconomyPlugin struct {
 	name        string
 	version     string
@@ -24,7 +23,6 @@ type EconomyPlugin struct {
 	topPlayers  []*PlayerAccount
 }
 
-// PlayerAccount represents a player's economy account
 type PlayerAccount struct {
 	Username    string    `json:"username"`
 	Balance     float64   `json:"balance"`
@@ -33,7 +31,6 @@ type PlayerAccount struct {
 	TotalSpent  float64   `json:"total_spent"`
 }
 
-// Config holds plugin configuration
 type Config struct {
 	DefaultBalance  float64 `json:"default_balance"`
 	MaxBalance      float64 `json:"max_balance"`
@@ -43,7 +40,6 @@ type Config struct {
 	TopPlayersLimit int     `json:"top_players_limit"`
 }
 
-// TransactionType represents different types of transactions
 type TransactionType int
 
 const (
@@ -53,7 +49,6 @@ const (
 	TRANSFER
 )
 
-// Transaction represents a financial transaction
 type Transaction struct {
 	From      string          `json:"from"`
 	To        string          `json:"to"`
@@ -63,7 +58,6 @@ type Transaction struct {
 	Reason    string          `json:"reason"`
 }
 
-// NewEconomyPlugin creates a new economy plugin instance
 func NewEconomyPlugin() *EconomyPlugin {
 	return &EconomyPlugin{
 		name:       "EconomyPocketmine",
@@ -81,41 +75,31 @@ func NewEconomyPlugin() *EconomyPlugin {
 	}
 }
 
-// OnEnable initializes the plugin
 func (e *EconomyPlugin) OnEnable() {
 	fmt.Printf("[%s] Enabling %s v%s\n", e.name, e.name, e.version)
 	
-	// Create data folder if it doesn't exist
 	if err := os.MkdirAll(e.dataFolder, 0755); err != nil {
 		log.Printf("Failed to create data folder: %v", err)
 		return
 	}
 	
-	// Load configuration
 	e.loadConfig()
-	
-	// Load player data
 	e.loadPlayerData()
-	
-	// Register commands
 	e.registerCommands()
 	
 	fmt.Printf("[%s] Plugin enabled successfully!\n", e.name)
 }
 
-// OnDisable handles plugin shutdown
 func (e *EconomyPlugin) OnDisable() {
 	fmt.Printf("[%s] Disabling plugin...\n", e.name)
 	e.savePlayerData()
 	fmt.Printf("[%s] Plugin disabled!\n", e.name)
 }
 
-// loadConfig loads plugin configuration
 func (e *EconomyPlugin) loadConfig() {
 	configPath := filepath.Join(e.dataFolder, "config.json")
 	
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		// Create default config
 		e.saveConfig()
 		return
 	}
@@ -131,7 +115,6 @@ func (e *EconomyPlugin) loadConfig() {
 	}
 }
 
-// saveConfig saves plugin configuration
 func (e *EconomyPlugin) saveConfig() {
 	configPath := filepath.Join(e.dataFolder, "config.json")
 	
@@ -146,7 +129,6 @@ func (e *EconomyPlugin) saveConfig() {
 	}
 }
 
-// loadPlayerData loads all player economy data
 func (e *EconomyPlugin) loadPlayerData() {
 	dataPath := filepath.Join(e.dataFolder, "players.json")
 	
@@ -167,7 +149,6 @@ func (e *EconomyPlugin) loadPlayerData() {
 	e.updateTopPlayers()
 }
 
-// savePlayerData saves all player economy data
 func (e *EconomyPlugin) savePlayerData() {
 	dataPath := filepath.Join(e.dataFolder, "players.json")
 	
@@ -185,7 +166,6 @@ func (e *EconomyPlugin) savePlayerData() {
 	}
 }
 
-// createAccount creates a new player account
 func (e *EconomyPlugin) createAccount(username string) *PlayerAccount {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -204,7 +184,6 @@ func (e *EconomyPlugin) createAccount(username string) *PlayerAccount {
 	return account
 }
 
-// getAccount retrieves a player's account, creating it if necessary
 func (e *EconomyPlugin) getAccount(username string) *PlayerAccount {
 	e.mutex.RLock()
 	account, exists := e.playerData[strings.ToLower(username)]
@@ -219,13 +198,11 @@ func (e *EconomyPlugin) getAccount(username string) *PlayerAccount {
 	return account
 }
 
-// getBalance returns a player's balance
 func (e *EconomyPlugin) getBalance(username string) float64 {
 	account := e.getAccount(username)
 	return account.Balance
 }
 
-// setBalance sets a player's balance
 func (e *EconomyPlugin) setBalance(username string, amount float64) bool {
 	if amount < 0 || amount > e.config.MaxBalance {
 		return false
@@ -240,7 +217,6 @@ func (e *EconomyPlugin) setBalance(username string, amount float64) bool {
 	
 	e.updateTopPlayers()
 	
-	// Log transaction
 	if e.config.EnableLogging {
 		transaction := &Transaction{
 			To:        username,
@@ -255,7 +231,6 @@ func (e *EconomyPlugin) setBalance(username string, amount float64) bool {
 	return true
 }
 
-// addMoney adds money to a player's account
 func (e *EconomyPlugin) addMoney(username string, amount float64) bool {
 	if amount <= 0 {
 		return false
@@ -277,7 +252,6 @@ func (e *EconomyPlugin) addMoney(username string, amount float64) bool {
 	
 	e.updateTopPlayers()
 	
-	// Log transaction
 	if e.config.EnableLogging {
 		transaction := &Transaction{
 			To:        username,
@@ -292,7 +266,6 @@ func (e *EconomyPlugin) addMoney(username string, amount float64) bool {
 	return true
 }
 
-// subtractMoney subtracts money from a player's account
 func (e *EconomyPlugin) subtractMoney(username string, amount float64) bool {
 	if amount <= 0 {
 		return false
@@ -312,7 +285,6 @@ func (e *EconomyPlugin) subtractMoney(username string, amount float64) bool {
 	
 	e.updateTopPlayers()
 	
-	// Log transaction
 	if e.config.EnableLogging {
 		transaction := &Transaction{
 			From:      username,
@@ -327,7 +299,6 @@ func (e *EconomyPlugin) subtractMoney(username string, amount float64) bool {
 	return true
 }
 
-// transferMoney transfers money between players
 func (e *EconomyPlugin) transferMoney(from, to string, amount float64) bool {
 	if amount <= 0 || strings.ToLower(from) == strings.ToLower(to) {
 		return false
@@ -355,7 +326,6 @@ func (e *EconomyPlugin) transferMoney(from, to string, amount float64) bool {
 	
 	e.updateTopPlayers()
 	
-	// Log transaction
 	if e.config.EnableLogging {
 		transaction := &Transaction{
 			From:      from,
@@ -371,7 +341,6 @@ func (e *EconomyPlugin) transferMoney(from, to string, amount float64) bool {
 	return true
 }
 
-// updateTopPlayers updates the top players list
 func (e *EconomyPlugin) updateTopPlayers() {
 	e.mutex.RLock()
 	defer e.mutex.RUnlock()
@@ -381,7 +350,6 @@ func (e *EconomyPlugin) updateTopPlayers() {
 		players = append(players, account)
 	}
 	
-	// Sort by balance (bubble sort for simplicity)
 	for i := 0; i < len(players); i++ {
 		for j := 0; j < len(players)-1-i; j++ {
 			if players[j].Balance < players[j+1].Balance {
@@ -390,7 +358,6 @@ func (e *EconomyPlugin) updateTopPlayers() {
 		}
 	}
 	
-	// Keep only top players
 	limit := e.config.TopPlayersLimit
 	if len(players) < limit {
 		limit = len(players)
@@ -399,7 +366,6 @@ func (e *EconomyPlugin) updateTopPlayers() {
 	e.topPlayers = players[:limit]
 }
 
-// logTransaction logs a transaction
 func (e *EconomyPlugin) logTransaction(transaction *Transaction) {
 	logPath := filepath.Join(e.dataFolder, "transactions.log")
 	
@@ -422,17 +388,12 @@ func (e *EconomyPlugin) logTransaction(transaction *Transaction) {
 	file.WriteString(logEntry)
 }
 
-// formatMoney formats a money amount with currency symbol
 func (e *EconomyPlugin) formatMoney(amount float64) string {
 	return fmt.Sprintf("%s%.2f", e.config.CurrencySymbol, amount)
 }
 
-// registerCommands registers all economy commands
 func (e *EconomyPlugin) registerCommands() {
 	fmt.Printf("[%s] Registering commands...\n", e.name)
-	
-	// In a real implementation, you would register these with the server's command system
-	// For demonstration, we'll show the command handlers
 	
 	commands := map[string]func([]string) string{
 		"balance": e.balanceCommand,
@@ -446,12 +407,10 @@ func (e *EconomyPlugin) registerCommands() {
 	
 	for cmd, handler := range commands {
 		fmt.Printf("[%s] Registered command: %s\n", e.name, cmd)
-		// Store handler for later use
 		_ = handler
 	}
 }
 
-// balanceCommand handles balance checking
 func (e *EconomyPlugin) balanceCommand(args []string) string {
 	if len(args) == 0 {
 		return "Usage: /balance [player]"
@@ -463,7 +422,6 @@ func (e *EconomyPlugin) balanceCommand(args []string) string {
 	return fmt.Sprintf("%s's balance: %s", username, e.formatMoney(balance))
 }
 
-// moneyCommand handles money management (admin only)
 func (e *EconomyPlugin) moneyCommand(args []string) string {
 	if len(args) < 3 {
 		return "Usage: /money <give|take|set> <player> <amount>"
@@ -500,14 +458,12 @@ func (e *EconomyPlugin) moneyCommand(args []string) string {
 	}
 }
 
-// payCommand handles player-to-player payments
 func (e *EconomyPlugin) payCommand(args []string) string {
 	if len(args) < 3 {
 		return "Usage: /pay <player> <amount>"
 	}
 	
-	// In a real implementation, you would get the sender from the command context
-	sender := "CurrentPlayer" // Placeholder
+	sender := "CurrentPlayer"
 	recipient := args[0]
 	amount, err := strconv.ParseFloat(args[1], 64)
 	if err != nil {
@@ -521,7 +477,6 @@ func (e *EconomyPlugin) payCommand(args []string) string {
 	return "Payment failed! Check your balance."
 }
 
-// economyCommand handles economy administration
 func (e *EconomyPlugin) economyCommand(args []string) string {
 	if len(args) == 0 {
 		return fmt.Sprintf("Economy Plugin v%s\nTotal players: %d\nCurrency: %s",
@@ -551,7 +506,6 @@ func (e *EconomyPlugin) economyCommand(args []string) string {
 	}
 }
 
-// topCommand shows top players by balance
 func (e *EconomyPlugin) topCommand(args []string) string {
 	if len(e.topPlayers) == 0 {
 		return "No players found!"
@@ -565,14 +519,11 @@ func (e *EconomyPlugin) topCommand(args []string) string {
 	return result
 }
 
-// Main function to demonstrate the plugin
 func main() {
 	plugin := NewEconomyPlugin()
 	
-	// Simulate plugin lifecycle
 	plugin.OnEnable()
 	
-	// Simulate some commands
 	fmt.Println("\n=== Demo Commands ===")
 	fmt.Println(plugin.balanceCommand([]string{"TestPlayer"}))
 	fmt.Println(plugin.moneyCommand([]string{"give", "TestPlayer", "500"}))
@@ -581,6 +532,5 @@ func main() {
 	fmt.Println(plugin.topCommand([]string{}))
 	fmt.Println(plugin.economyCommand([]string{"stats"}))
 	
-	// Simulate shutdown
 	plugin.OnDisable()
 }
